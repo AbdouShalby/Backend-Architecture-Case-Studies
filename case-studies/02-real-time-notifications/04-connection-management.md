@@ -37,6 +37,8 @@ Why SSE as fallback:
 > SSE is declared as a fallback but is **never mentioned again** in the architecture. The entire design — connection routing, Kafka consumer delivery, gRPC internal transport, multi-device support — assumes WebSocket. Implementing SSE as a true fallback is not trivial: it requires a second connection management path, different heartbeat mechanics (SSE has no built-in ping/pong), and uni-directional communication (client can't send acknowledgments back over SSE without separate HTTP requests).
 >
 > **Reality:** This is listed as a fallback for completeness, but in practice, **WebSocket support is near-universal** in 2024 (all modern browsers, all mobile platforms). The SSE path would only matter for extremely restrictive corporate proxies. If needed, it's a separate engineering effort estimated at 2-3 weeks.
+>
+> **Interim Mitigation:** For the ~2% of clients that can't establish WebSocket connections (restrictive corporate proxies), the system falls back to **HTTP long-polling on the existing REST API** — clients poll `GET /api/notifications?since={timestamp}` every 10 seconds. This is not SSE, but it delivers notifications with ≤10s delay using infrastructure that already exists. The dedicated SSE implementation is deprioritized until polling clients exceed 5% of total connections.
 
 ---
 
@@ -99,6 +101,10 @@ L4 load balancer (e.g., HAProxy, NLB):
 Decision: L4 (TCP) → scales better for persistent connections.
 SSL termination at WebSocket server using Go's native TLS.
 ```
+
+> **⚠️ Mitigation: L4 Load Balancer Routing Limitations**
+>
+> L4 load balancing sacrifices HTTP-level path routing and per-request metrics (since it operates at TCP level). This is mitigated by: (1) **service-level internal routing** — the WebSocket server itself handles path-based routing after the connection is established (e.g., `/ws/notifications` vs `/ws/presence`), (2) **connection-level metrics** — L4 provides connection count, bytes transferred, and TCP health checks, while application-level metrics (messages/sec, latency) are collected by the WebSocket servers themselves and exported to Prometheus, (3) **sticky sessions via IP hash** — L4 supports connection affinity without needing HTTP cookie inspection.
 
 ---
 

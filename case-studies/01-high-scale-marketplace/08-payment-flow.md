@@ -296,6 +296,20 @@ $intent = Stripe::paymentIntents()->create([
 // Stripe deducts ~$2.90 from marketplace's share
 ```
 
+> **⚠️ Honest Trade-off: Stripe Destination Charges**
+>
+> **Why destination charges (not separate charges & transfers):** Destination charges keep the entire payment lifecycle in one API call — charge, platform fee deduction, and seller payout happen atomically. Separate charges & transfers give more control but require manual reconciliation between the charge and each transfer.
+>
+> **What could go wrong:**
+> - **Vendor lock-in:** Deep integration with Stripe Connect makes PSP migration a multi-month effort (payment flows, seller onboarding, payout schedules all tied to Stripe)
+> - **Seller onboarding friction:** Every seller needs a Stripe Connected Account with KYC verification — delays of 1-3 days, rejection rates of 5-10% in some regions
+> - **Geographic limits:** Stripe Connect isn't available in every country. Sellers in unsupported regions can't be onboarded at all
+> - **Fee structure:** Stripe charges 0.25% + $0.25 per payout on top of the standard 2.9% + $0.30 — this compounds for high-volume sellers
+>
+> **Why we accept this:** At our current scale (< $100M GMV), building a custom payment split system with manual bank transfers costs more in engineering time than Stripe's additional fees. Stripe handles seller tax reporting (1099-K), fraud liability shift, and international payouts — each of which would require dedicated engineering teams to replicate.
+>
+> **Mitigation:** Abstract the payment split behind a `PaymentSplitService` interface. If Stripe becomes too expensive or geographically limiting, the interface allows switching to Adyen for Platforms or building a custom ledger-based split with scheduled bank transfers — without changing the order or checkout flow.
+
 ---
 
 ## 🔄 Refund Flow
@@ -391,6 +405,10 @@ class TimeoutAbandonedPayments
     }
 }
 ```
+
+> **⚠️ Mitigation: Payment Timeout Inventory Recovery**
+>
+> When a payment times out after 15 minutes, reserved inventory must be released. A **timeout sweep job** runs every 5 minutes, querying orders in `payment_pending` state older than 15 minutes. For each expired order, it: (1) cancels the Stripe PaymentIntent, (2) releases inventory reservations, (3) moves the order to `cancelled_timeout` state. This prevents phantom inventory locks from accumulating during high-traffic periods where payment abandonment spikes.
 
 ---
 

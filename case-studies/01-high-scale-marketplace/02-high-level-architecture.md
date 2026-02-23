@@ -220,6 +220,10 @@ graph LR
 
 > ⚖️ **Trade-off**: Async means eventual consistency. Product search results may be stale by 1-5 seconds after a product update. This is acceptable for a marketplace.
 
+> **⚠️ Mitigation: Synchronous Coupling on Checkout Path**
+>
+> The checkout path's synchronous dependency on Product Service (for price verification) and Cart Service (for item retrieval) is managed with: (1) **timeout budgets** — each sync call has a 500ms budget; if exceeded, the call fails fast rather than blocking checkout, (2) **circuit breakers** — after 5 consecutive failures to Product Service, the circuit opens and checkout uses the last-known cached price (with a "price may have changed" flag), (3) **bulkhead pattern** — checkout's connection pool to Product Service is isolated from browse/search traffic, preventing a search traffic spike from exhausting checkout's connections.
+
 ---
 
 ## 🚦 Request Flow: Product Page Load

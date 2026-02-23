@@ -16,6 +16,14 @@
 | 350 GB total | ✅ Single instance handles this | No sharding needed |
 | Audit trail | ✅ Triggers + WAL | Every change is traceable |
 
+> **⚠️ Known Risk: Single PostgreSQL Instance**
+>
+> At 2 TPS average (55K transactions/day), a single PostgreSQL instance handles all load comfortably. But a single database is a **single point of failure for all payment data**.
+>
+> **Risk:** If the primary PostgreSQL instance fails (hardware, corruption, or operator error), all payment processing stops until recovery. The synchronous replica within the region provides hardware-level protection, but not against logical corruption (e.g., bad migration, accidental DELETE).
+>
+> **Mitigation:** (1) **Synchronous streaming replica** — RPO: 0 data loss for hardware failures, automatic promotion in < 30 seconds via Patroni, (2) **Point-in-time recovery (PITR)** — WAL archival to S3 enables recovery to any second in the last 35 days, protecting against logical corruption, (3) **Daily logical backups** — pg_dump provides a human-readable safety net. The single-instance choice is revisited if TPS exceeds 500 (current headroom: 250×).
+
 ---
 
 ## 📊 Core Schema
@@ -221,6 +229,17 @@ GROUP BY currency;
 -- If balance ≠ 0 → ALERT. STOP. INVESTIGATE.
 -- Run this check: every transaction, every hour, every settlement.
 ```
+
+> **⚠️ Known Risk: Double-Entry Ledger Overhead**
+>
+> Every payment generates **2× the write load** (one debit entry + one credit entry), and every ledger query must aggregate paired entries. This write amplification is the cost of auditability.
+>
+> **What could go wrong:**
+> - Under extreme load, the double writes could become a bottleneck (each payment = INSERT payment + INSERT debit + INSERT credit + UPDATE balance, all in one transaction)
+> - If a debit posts without its matching credit (e.g., crash between the two INSERTs), the ledger is **unbalanced** — the most serious integrity violation in financial systems
+> - Reconciliation queries (`SUM(debits) = SUM(credits)`) become expensive as the ledger grows (billions of entries over years)
+>
+> **Mitigation:** (1) Both entries are inserted in a **single database transaction** — if either INSERT fails, both roll back (atomic pair guarantee), (2) a **balance verification trigger** runs on every INSERT and rejects the transaction if `SUM(debits) ≠ SUM(credits)` for the affected account, (3) the ledger table is **partitioned by month** — reconciliation queries only scan the active partition, and old partitions are archived to cold storage after the 7-year retention period.
 
 ---
 

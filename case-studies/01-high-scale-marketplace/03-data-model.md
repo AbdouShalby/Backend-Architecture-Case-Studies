@@ -19,6 +19,10 @@
 
 > ⚖️ **Trade-off**: MySQL over MongoDB — We need ACID for payments and complex joins for order reports. MongoDB's flexibility isn't worth the consistency trade-off for financial transactions.
 
+> **⚠️ Mitigation: MySQL Limitations**
+>
+> MySQL's weaker JSON indexing (no native GIN indexes like PostgreSQL's JSONB) is mitigated by **Elasticsearch handling all product attribute search/filtering**. MySQL JSON columns are only used for storage and admin display, never for customer-facing queries. If Elasticsearch is unavailable, attribute-based search degrades gracefully (returns only basic keyword results). If we outgrow MySQL's JSON capabilities for write-heavy attribute workflows, we can migrate the `attributes` column to a dedicated EAV table or adopt PostgreSQL for the product catalog service specifically — without affecting the order/payment path.
+
 ---
 
 ## 📐 Schema Design

@@ -35,6 +35,14 @@ Business/Enterprise → Token bucket:
   should NOT be rate limited (if under 10K/min total).
 ```
 
+> **⚠️ Known Risk: Algorithm Switch on Plan Upgrade**
+>
+> When a tenant upgrades from Free (fixed window) to Pro (sliding window counter), the **Redis key structure changes entirely** (`rl:...:fw:bucket` → `rl:...:sw:current` + `rl:...:sw:previous`). The old keys are orphaned and new keys start from zero.
+>
+> **What this means:** For a brief window after upgrade, the tenant gets a "fresh" counter — potentially allowing a burst above their intended limit during the remainder of the current window. Downgrade has the opposite problem: accumulated counts are lost, and the simpler algorithm may reject requests that the previous algorithm would have allowed.
+>
+> **Mitigation:** (1) Algorithm transitions happen at the **next window boundary**, not mid-window — the upgrade is queued and applied when the current window expires (max delay: 1 minute for per-minute limits), (2) old keys are cleaned up by a TTL sweep (they expire naturally within 2× the window duration), (3) the upgrade event is logged with a `grace_period: true` flag so that billing and analytics exclude the transition window from SLA calculations.
+
 ---
 
 ## 🏗 Quota Architecture
@@ -148,6 +156,17 @@ Implementation:
   if tokens >= requested_tokens → allow, deduct
   else → reject
 ```
+
+> **⚠️ Known Risk: Endpoint Weight Governance**
+>
+> Endpoint weights (`/search = 5 tokens`, `/export = 50 tokens`) are **externally visible** — they directly affect how many API calls a tenant can make within their quota. Changing weights is effectively a **contract change** for paying customers.
+>
+> **What could go wrong:**
+> - Miscalibrated weights (e.g., `/search` set too high) silently reduce effective quotas, causing 429 errors for legitimate use
+> - Weight changes without notice break tenant automation that was calibrated to the old weights
+> - Complex weight structures confuse developers ("why did I use 50 tokens for one request?")
+>
+> **Mitigation:** (1) Weights are published in the **public API documentation** with the header `X-RateLimit-Cost` returned on every response, so developers can see exactly what each request costs, (2) weight changes go through a **deprecation cycle** — new weights are announced 30 days before enforcement, with the old weights honored during the transition, (3) a **weight validation pipeline** runs in CI — any PR changing weights must include a simulation showing impact on the top 100 tenants' usage patterns, flagging any tenant that would exceed their quota under the new weights.
 
 ---
 

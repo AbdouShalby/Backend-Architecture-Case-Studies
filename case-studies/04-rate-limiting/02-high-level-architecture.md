@@ -110,6 +110,10 @@ Service library handles:
   → Has full context, fine-grained control
 ```
 
+> **⚠️ Mitigation: Hybrid Architecture Consistency**
+>
+> Running rate limiting at two enforcement points (API Gateway and service library) creates a risk of **rule drift** — the gateway could enforce different limits than the library if configurations desync. This is mitigated by: (1) **single source of truth** — both gateway and library read rules from the same Redis config store, never from local config files, (2) **version stamps** — every rule has a version number; if a service detects its cached version is behind Redis, it forces an immediate refresh, (3) **enforcement boundary clarity** — the gateway handles global/IP-level limits only, while the library handles tenant/endpoint-level limits. They never enforce the same rule, eliminating double-counting.
+
 ---
 
 ## 🔄 Request Flow

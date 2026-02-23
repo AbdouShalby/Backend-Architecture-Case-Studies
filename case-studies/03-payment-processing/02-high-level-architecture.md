@@ -177,6 +177,19 @@ NEVER use float/double for money.
 | **Settlement Worker** | End-of-day settlement processing | Async (batch) | Once daily |
 | **Reconciliation Worker** | Compare our records vs PSP records | Async (batch) | Once daily |
 
+> **⚠️ Honest Trade-off: Service Decomposition Risk**
+>
+> Five separate services (Payment, Fraud, Token, Ledger, PSP Router) provide **PCI scope isolation** — only the Token Service touches sensitive card data. But service boundaries introduce inter-service failure modes that a monolith doesn't have.
+>
+> **What could go wrong:**
+> - A single payment traverses Payment → Fraud → Token → PSP Router → Ledger — **5 network hops**. Each hop adds ~1-2ms latency and a failure probability. The composite success rate is the product of individual rates (99.9%⁵ = 99.5%)
+> - If Fraud Service is slow (e.g., ML model cold start), it blocks the entire payment path — there's no way to "skip" fraud detection safely
+> - Partial failures are harder to reason about: what if PSP Router succeeds but Ledger is down? The payment is captured but not recorded
+>
+> **Why we accept this:** PCI DSS compliance requires Token Service isolation — this alone forces at least 2 services. Once we're building a distributed system anyway, separating Fraud (different scaling profile — CPU-bound) and Ledger (different data model — append-only) gives each component independent deployability and failure isolation.
+>
+> **Mitigation:** (1) **Synchronous calls use circuit breakers** with 500ms timeouts — a degraded Fraud Service triggers the "rules-only" fast path (skip ML, apply heuristic rules in < 50ms), (2) **Ledger writes are idempotent** — if the Ledger call fails after PSP capture, the reconciliation worker detects the unrecorded capture within 1 hour, (3) **health-check-based routing** — if any service enters degraded state, the Payment Service can reroute (e.g., skip optional enrichment, use cached fraud scores).
+
 ---
 
 ## 🏛 Service Communication

@@ -318,6 +318,10 @@ Application (our rate limiter):
   - Adaptive limits: health-based adjustment
 ```
 
+> **⚠️ Mitigation: CDN Propagation Delay**
+>
+> CDN edge rule updates (e.g., blocking a new attack pattern) take **30-90 seconds to propagate** across all PoPs globally. During this window, the application layer absorbs the attack traffic that the CDN hasn't started filtering yet. This is handled by: (1) **application-layer rate limiting is always active** — it's not a fallback, it's the primary defense, and CDN filtering is an optimization layer on top, (2) **the adaptive rate limiter** (health-score based) automatically tightens limits when it detects elevated traffic, regardless of whether CDN rules have propagated, (3) **pre-deployed CDN rules** for common attack patterns (SYN floods, known bad ASNs) are always active — only novel patterns require propagation.
+
 ---
 
 ## 🧩 Advanced Patterns
