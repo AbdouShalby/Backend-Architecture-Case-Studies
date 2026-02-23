@@ -67,6 +67,12 @@ graph TB
 | **Replica 2** | Seller reads | Dashboard, order management, analytics | Different query patterns — heavy JOINs |
 | **Replica 3** | Analytics/Reports | Aggregations, exports | Long-running queries that would block others |
 
+> **⚠️ Known Risk: Split-Brain During Failover**
+>
+> If health monitoring falsely detects the primary as dead and promotes a replica while the old primary is still alive, **two nodes accept writes simultaneously**, causing data divergence that is extremely difficult to recover from (especially for orders and payments).
+>
+> **Mitigation:** Use fencing (STONITH — Shoot The Other Node In The Head) to kill the old primary before promoting the replica. Tools like Orchestrator or ProxySQL with consensus-based failover reduce this risk. Never assume the old primary is truly dead without positive confirmation.
+
 ---
 
 ## 🔀 Query Routing

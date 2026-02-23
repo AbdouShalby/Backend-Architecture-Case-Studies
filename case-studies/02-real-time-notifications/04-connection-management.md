@@ -32,6 +32,12 @@ Why SSE as fallback:
   ✅ We mainly need server→client anyway (95% of messages)
 ```
 
+> **⚠️ Honest Trade-off: SSE Fallback is Undesigned**
+>
+> SSE is declared as a fallback but is **never mentioned again** in the architecture. The entire design — connection routing, Kafka consumer delivery, gRPC internal transport, multi-device support — assumes WebSocket. Implementing SSE as a true fallback is not trivial: it requires a second connection management path, different heartbeat mechanics (SSE has no built-in ping/pong), and uni-directional communication (client can't send acknowledgments back over SSE without separate HTTP requests).
+>
+> **Reality:** This is listed as a fallback for completeness, but in practice, **WebSocket support is near-universal** in 2024 (all modern browsers, all mobile platforms). The SSE path would only matter for extremely restrictive corporate proxies. If needed, it's a separate engineering effort estimated at 2-3 weeks.
+
 ---
 
 ## 🏗 WebSocket Server Architecture

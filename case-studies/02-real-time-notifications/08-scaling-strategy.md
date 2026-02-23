@@ -302,6 +302,17 @@ Flow:
 □ Load test: 5M concurrent connections, 100K msg/sec
 ```
 
+> **⚠️ Known Risk: MySQL → Cassandra Migration Complexity**
+>
+> "Migrate notification storage from MySQL to Cassandra" is a single checklist item that represents a **multi-month engineering effort**:
+> - Dual-write period (write to both MySQL and Cassandra simultaneously)
+> - Backfill historical data (billions of notifications)
+> - Data consistency verification tooling (compare reads from both stores)
+> - Gradual read cutover (shadow reads → percentage-based → full)
+> - Rollback plan if Cassandra performance doesn't meet expectations
+>
+> During the transition, some notifications may exist in MySQL but not Cassandra (or vice versa). A reconciliation checker must run continuously during migration. Estimated effort: 2-4 months with dedicated team.
+
 ### Stage 4 → 5 (Multi-region)
 
 ```

@@ -119,6 +119,10 @@ Design: 6-node Redis Cluster (3 primary + 3 replica)
   Headroom: 2× (good for burst traffic)
 ```
 
+> **⚠️ Honest Trade-off: Redis Sizing Math Gap**
+>
+> The Lua script throughput calculation shows 13 nodes needed (at 100K scripts/sec/node for 1.25M ops), but we deploy 6 nodes. The gap is bridged by: (1) pipelining batches of operations, (2) local in-memory counters handling ~40% of checks without hitting Redis (for clearly under-limit clients), and (3) the mix of simple `GET`/`INCR` commands (300K+/sec per node) vs full Lua scripts. Under worst-case conditions (all requests hitting Redis with Lua), we would need to scale to 12+ nodes — this is our scaling trigger.
+
 ---
 
 ## 🌐 Network Budget

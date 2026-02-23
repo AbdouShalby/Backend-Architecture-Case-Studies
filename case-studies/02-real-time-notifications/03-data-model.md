@@ -93,6 +93,16 @@ SET is_read = true, read_at = toTimestamp(now())
 WHERE user_id = ? AND created_at = ? AND notification_id = ?;
 ```
 
+> **⚠️ Known Risk: Cassandra Tombstone Accumulation**
+>
+> The mark-as-read operation (`UPDATE ... SET is_read = true`) creates **tombstones** in Cassandra. Cassandra is notoriously bad at frequent updates — tombstones accumulate, increase read latency (Cassandra must scan past them), and create compaction pressure for active users. A power user marking hundreds of notifications as read generates hundreds of tombstones per partition.
+>
+> **Mitigations:**
+> - Keep `is_read` state in Redis (fast, no tombstones) with periodic Cassandra sync
+> - Use a separate `read_receipts` table with inserts instead of updates (Cassandra handles inserts well)
+> - Set `gc_grace_seconds` appropriately for the notifications table (shorter than default 10 days, since this data isn't replicated cross-DC)
+> - Monitor tombstone-per-read warnings in Cassandra logs
+
 ### Table 2: `notification_details` (Full notification lookup)
 
 ```sql

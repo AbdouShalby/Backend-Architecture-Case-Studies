@@ -162,6 +162,12 @@ Redis Sentinel (3 nodes):
   No data loss (with AOF persistence)
 ```
 
+> **⚠️ Known Risk: Cascading Failure from Redis Outage**
+>
+> When Redis goes down and the circuit breaker trips, all cache misses go to MySQL replicas. At 95% cache hit rate, that's a **20× increase in DB read traffic**. The replicas may not handle this sudden load, causing them to crash too — leaving only the primary, which then gets overwhelmed. This Redis → Replicas → Primary → total outage cascade is the most dangerous failure mode.
+>
+> **Mitigation:** When the Redis circuit breaker trips, simultaneously activate emergency rate limiting on non-critical read endpoints (search, recommendations, reviews) to protect the database. Accept degraded functionality to preserve core transaction processing.
+
 ---
 
 ## 🟡 Failure Scenario 3: Payment Gateway Down
@@ -329,6 +335,10 @@ PREVENTION:
 | RabbitMQ | < 10s | < 60s (restart) | None (persistent queues) |
 | Payment Gateway | < 5s | Fallback immediate | None |
 | Full data center | < 30s | < 5 min (DNS failover) | < 5s of writes |
+
+> **⚠️ Honest Trade-off: Data Center Failure SLA**
+>
+> The "full data center" row in the SLA table claims "< 5 min (DNS failover)" recovery — but this architecture at Stage 4 is **single-region**. Multi-region is deferred to Stage 6 (50M+ MAU). Without a multi-region deployment, full data center failure means **extended downtime** (hours, not minutes). The 5-minute target is aspirational and requires the multi-region investment described in Stage 6 of the scaling strategy.
 
 ---
 

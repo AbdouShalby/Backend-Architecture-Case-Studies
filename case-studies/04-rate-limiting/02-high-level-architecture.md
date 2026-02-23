@@ -225,6 +225,14 @@ When an admin updates a rate limit rule:
   Fallback: even without Pub/Sub, servers poll every 30 seconds
 ```
 
+> **⚠️ Known Risk: Config Propagation Consistency Window**
+>
+> Redis Pub/Sub is **fire-and-forget** — no delivery guarantees. If a server restarts, is mid-deployment, or has a brief network blip, it misses the Pub/Sub notification. That server won't receive updated rules until the next 30-second poll. During that window, it enforces **stale limits**.
+>
+> **Worst case:** An admin deletes a rate limit rule. Pub/Sub notification is missed by 3 of 20 servers. Those 3 servers continue enforcing the deleted rule for up to 30 seconds. For rule changes (not deletions), this is merely inconsistent. For emergency rule removals (e.g., accidentally blocking legitimate traffic), 30 seconds of stale enforcement can be costly.
+>
+> **Mitigation:** For critical rule changes, combine Pub/Sub with a version stamp in the rule — servers compare their local version on every request and trigger an immediate poll if stale.
+
 ---
 
 ## ⬅️ [← Capacity Estimation](01-capacity-estimation.md) · [Algorithms Deep Dive →](03-algorithms.md)

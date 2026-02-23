@@ -194,6 +194,16 @@ After processing:
   Redis SETEX dedup:notif_xyz:push:usr_42 1 86400
 ```
 
+> **⚠️ Known Risk: Redis Data Loss Breaks Deduplication**
+>
+> Dedup keys are stored in Redis with 24-hour TTL. If Redis loses data — through memory pressure eviction (if `maxmemory-policy` isn't `noeviction`), node restart, or failover with incomplete replication — **dedup keys are lost and duplicate notifications will be delivered**. This means a Redis failure doesn't just cause missed notifications; it can cause duplicate ones.
+>
+> **Mitigations:**
+> - Use `maxmemory-policy: noeviction` for the dedup Redis instance (reject new writes rather than evict)
+> - Enable AOF persistence with `appendfsync everysec` (lose at most 1 second of dedup keys on crash)
+> - For critical notifications (payment confirmations, security alerts), store dedup keys in Cassandra as the source of truth, with Redis as a fast-path cache
+> - Accept that non-critical notification duplicates (social, marketing) are annoying but not harmful
+
 ### Idempotency at API Level
 
 ```

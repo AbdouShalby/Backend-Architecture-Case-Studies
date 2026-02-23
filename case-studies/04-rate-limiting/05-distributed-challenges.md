@@ -159,6 +159,17 @@ Not all rate limits are equal during a Redis outage:
     → Less accurate but better than nothing
 ```
 
+> **⚠️ Known Risk: Local Fallback Assumes Even Load Distribution**
+>
+> The local fallback divides the global limit evenly across servers (`limit / NUM_SERVERS = 1000/20 = 50 per server`). This assumes perfectly uniform load distribution, which rarely holds in practice:
+> - Sticky sessions concentrate specific tenants on specific servers
+> - Rolling deployments temporarily reduce the active server count
+> - Health-check-based routing shifts traffic away from slow servers
+>
+> A server receiving 2× average traffic rejects legitimate users prematurely (its local limit of 50 is exhausted). A server receiving 0.5× average traffic is too lenient (its 50 slots are never filled while the global limit is exceeded).
+>
+> **Better approach:** Weight local limits by observed traffic share per server (last 5 minutes), not by equal division. Accept that during Redis outage, rate limiting accuracy degrades from ~99.7% to ~85-90%.
+
 ---
 
 ## 🟡 Challenge 4: Multi-Node Counting Accuracy

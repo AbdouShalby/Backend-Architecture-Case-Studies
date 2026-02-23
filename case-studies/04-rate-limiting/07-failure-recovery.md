@@ -284,6 +284,15 @@ Step 5: Post-incident
   - Run reconciliation report
 ```
 
+> **⚠️ Technical Note: Sentinel vs. Cluster Failover**
+>
+> This runbook references Redis Sentinel commands (`sentinel masters`, `sentinel failover`), but the architecture uses **Redis Cluster**, which has its own built-in failover mechanism via `CLUSTER FAILOVER`. In production:
+> - **Redis Cluster failover:** Run `CLUSTER FAILOVER` on the target replica node, or let the cluster's automatic failover detect master failure (after `cluster-node-timeout`, default 15s)
+> - **Manual recovery:** `redis-cli --cluster fix <node:port>` to repair cluster slot assignments
+> - **Monitoring:** `CLUSTER INFO` for cluster health, not Sentinel endpoints
+>
+> Sentinel is used for standalone Redis HA setups — it's a separate topology from Redis Cluster. Both are valid, but they should not be mixed in documentation.
+
 ---
 
 ## ⬅️ [← Multi-Tenant Quotas](06-multi-tenant.md) · [DDoS & Advanced →](08-ddos-advanced.md)

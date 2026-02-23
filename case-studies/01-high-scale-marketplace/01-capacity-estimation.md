@@ -164,6 +164,10 @@ With headroom (2x):
   Flash sale: 150 servers (auto-scaled)
 ```
 
+> **⚠️ Known Risk: Auto-Scaling Cold Start**
+>
+> The flash sale target of 150 servers assumes auto-scaling has time to provision them. In reality, VM provisioning takes **2-5 minutes**, during which the first wave of traffic hits only the existing 6-16 servers. For scheduled flash sales, we pre-scale 30 minutes before. For unscheduled viral traffic spikes, a warm pool of standby instances (costly but necessary) or container-based scaling (30-60 second startup) reduces this gap.
+
 ### Database Servers
 
 ```

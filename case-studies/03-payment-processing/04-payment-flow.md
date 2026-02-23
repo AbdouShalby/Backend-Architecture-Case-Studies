@@ -217,6 +217,23 @@ Merchant "ShopXYZ" daily settlement:
   Merchant receives $11,847.50 via bank transfer on T+2
 ```
 
+> **⚠️ Honest Risk: Eventual Consistency Between Capture and Settlement**
+>
+> Between the moment a payment is **captured** and the moment it's **settled** (T+1 to T+2), the system is in an **eventually consistent state**:
+>
+> - Our ledger shows `status: captured` and the merchant's dashboard displays revenue
+> - But the actual money **hasn't moved yet** — it's still in the PSP's settlement pipeline
+> - If the PSP experiences financial distress or goes bankrupt in this window, the merchant could lose those funds
+> - At $50 average order × 2 TPS, that's up to **$8.6M in in-flight funds** at any given time
+>
+> **Mitigations:**
+> - Merchant dashboard clearly labels revenue as "Captured (Pending Settlement)" vs "Settled"
+> - Multi-PSP strategy means no single PSP holds 100% of in-flight funds
+> - Reconciliation worker detects settlement delays — if T+3 passes without settlement confirmation, an alert fires
+> - PSP selection criteria includes financial stability and regulatory compliance (PCI Level 1, SOC 2)
+>
+> **What we cannot fix:** This is inherent to all card payment systems — the delay between capture and bank settlement is a fundamental property of the card network (Visa/Mastercard) settlement cycle, not something we can architect away.
+
 ---
 
 ## 🔁 Subscription / Recurring Payment Flow

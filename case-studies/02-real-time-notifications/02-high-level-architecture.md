@@ -287,6 +287,12 @@ Rule: The API never waits for delivery. It accepts and returns immediately.
 
 > At 200M messages/day and the need for message replay (reprocess failed batches), Kafka is the right choice. RabbitMQ was fine for the marketplace at 100 msg/sec.
 
+> **⚠️ Known Risk: Kafka Operational Complexity**
+>
+> Kafka's strengths (200M events/day throughput, built-in replication, consumer group rebalancing) come with real operational costs: ZooKeeper/KRaft dependency management, partition rebalancing storms during broker additions, careful disk capacity planning (Kafka stores all events for the retention period), and **topic/partition counts that are extremely difficult to change after creation**. The minimum viable Kafka cluster (3 brokers + ZooKeeper) is far heavier than a single RabbitMQ node.
+>
+> **Why we accept this:** At 200M events/day, there is no simpler alternative. RabbitMQ would require complex sharding at this volume. The operational investment is justified — but it requires dedicated Kafka expertise on the team (at least 1 engineer with production Kafka experience).
+
 ---
 
 ## ⬅️ [← Capacity Estimation](01-capacity-estimation.md) · [Data Model →](03-data-model.md)

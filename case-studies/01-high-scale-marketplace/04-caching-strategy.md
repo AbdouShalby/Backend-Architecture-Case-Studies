@@ -114,6 +114,12 @@ sequenceDiagram
 - No write penalty (write to DB, delete from cache)
 - Cache only stores data that's actually being read
 
+> **⚠️ Known Risk: Cache Stampede (Thundering Herd)**
+>
+> When a hot product key expires, hundreds of concurrent requests simultaneously miss the cache and all hit MySQL for the same row. During flash sales on popular products, this can overload the database.
+>
+> **Mitigations:** Probabilistic early expiration (add jitter to TTL), request coalescing (only one request rebuilds the cache, others wait), or locking the cache key during rebuild. We accept this risk at current scale because our 95% hit rate means stampedes are rare, but this becomes critical beyond 50K RPM per product.
+
 ### Pattern: Write-Through — For Category Tree
 
 ```

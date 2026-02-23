@@ -62,6 +62,16 @@ High availability, single region:
   Availability: 99.99% (component redundancy)
 ```
 
+> **⚠️ Honest Risk: Single-Region = Single Point of Failure**
+>
+> Both Day 1 and Production architectures run in **one AWS region** (e.g., us-east-1). If the entire region suffers an outage (has happened — us-east-1 went down for 4+ hours in Dec 2021), **all payment processing stops**.
+>
+> - **RTO (Recovery Time Objective):** 15–60 minutes for manual DNS failover to DR region (depends on on-call response time)
+> - **RPO (Recovery Point Objective):** ~0 within region (synchronous replica), but cross-region replication is async — **up to 30 seconds of committed transactions could be lost** during region failover
+> - **Business impact:** At 2 TPS average, a 1-hour outage means ~7,200 failed payment attempts. With retry logic on the client, most recover — but some customers abandon checkout permanently.
+>
+> **Why we accept this:** Multi-region active-active for a payment ledger requires distributed transactions (2PC or consensus), which introduces ~50ms latency per write and costs $25K-40K/month. At $4.5B/year GMV, the expected annual loss from a single-region outage ($50K-200K) is far less than the operational complexity cost. Multi-region is documented below as a **DR-only** upgrade path.
+
 ### Multi-Region (If Required)
 
 **$25,000-40,000/month**

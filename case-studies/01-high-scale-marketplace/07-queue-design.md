@@ -93,6 +93,12 @@ graph LR
 
 > 💡 **Decision**: RabbitMQ — best fit for our scale and routing needs. If on AWS, SQS is the pragmatic choice. Kafka when we hit 1M+ messages/second.
 
+> **⚠️ Known Risk: RabbitMQ → Kafka Migration is a Replatform**
+>
+> The scaling strategy mentions switching to Kafka at 1M+ messages/second as if it's an upgrade. It's not — it's a **fundamental paradigm shift**: push vs pull, exchanges vs topics, per-message ack vs offset commits. Every producer and consumer must be rewritten. This is a multi-month engineering effort requiring a dual-running period with both systems.
+>
+> **Why we start with RabbitMQ anyway:** The operational simplicity at current volume (2,000 events/sec peak) saves 6-12 months of engineering time. The migration cost is real but is the price of not over-engineering on Day 1.
+
 ---
 
 ## 📋 Queue Definitions

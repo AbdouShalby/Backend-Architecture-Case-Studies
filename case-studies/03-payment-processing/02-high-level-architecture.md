@@ -219,6 +219,18 @@ At 55K events/day, even a single RabbitMQ instance has 1000× headroom.
 Kafka shines at 200M events/day (Case Study 2). Here it's unnecessary complexity.
 ```
 
+> **⚠️ Known Risk: RabbitMQ Durability in Network Partitions**
+>
+> RabbitMQ mirrored queues use a synchronous replication model that can **lose acknowledged messages during network partitions** (split-brain). When a partition heals, the losing side discards its state. Kafka's ISR (In-Sync Replica) model is fundamentally stronger — consumers track offsets, and brokers don't discard data after partition recovery.
+>
+> **Why we accept this risk:**
+> - At 55K events/day, the probability of a message being in-flight during a partition is extremely low (~seconds of data at risk)
+> - We use **publisher confirms** — the publisher knows if the broker didn't persist the message
+> - Our **reconciliation worker** (see [Failure & Recovery](07-failure-recovery.md)) runs every hour and catches any missed events by comparing PSP records against our ledger
+> - RabbitMQ's `ha-promote-on-shutdown: always` + `ha-sync-mode: automatic` minimize the window
+>
+> **If this becomes unacceptable:** Migrate to Kafka when volume exceeds ~100K events/sec (1,700× current load). At that point, Kafka's operational overhead is justified.
+
 ---
 
 ## 🔐 PCI DSS Scope Minimization

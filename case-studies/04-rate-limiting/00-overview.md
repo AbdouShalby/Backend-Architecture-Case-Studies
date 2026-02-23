@@ -49,6 +49,12 @@
 | **Update latency** | < 5 seconds | Config changes propagate within 5s |
 | **Memory** | < 1 GB per rate limit dimension | For 10K tenants × multiple keys |
 
+> **⚠️ Honest Trade-off: 99.99% vs. Single-Region Design**
+>
+> 99.99% availability allows only **~52 minutes of downtime per year**. The entire design is single-region with one Redis Cluster. Every major cloud provider experiences at least one regional incident per year that exceeds this budget. Realistically, this design achieves **99.95%-99.99%** within a single region (with component redundancy and fail-open).
+>
+> True 99.99% across region failures requires cross-region Redis replication — which introduces counter synchronization lag (50-100ms cross-region), meaning rate limits become eventually consistent across regions. This trade-off (exact limits vs. availability) is fundamental and unsolvable without accepting some over/under-counting during region failover.
+
 ---
 
 ## 🎯 Rate Limit Types

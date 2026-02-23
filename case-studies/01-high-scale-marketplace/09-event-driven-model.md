@@ -231,6 +231,12 @@ sequenceDiagram
 > - Only 3-4 services in the saga (manageable complexity)
 > - No single point of failure for the most critical flow
 
+> **⚠️ Honest Trade-off: Choreography Debugging Complexity**
+>
+> "Harder to visualize full flow" significantly understates the operational cost. With choreography, there is **no single place to see the state of a checkout saga**. If an order is stuck in `pending`, you must trace events across 3-4 services' logs, check multiple queues, and correlate by `correlation_id`. This debugging cost grows linearly with team size.
+>
+> **Mitigation:** Build a saga status dashboard that aggregates events by `correlation_id` to reconstruct the full saga state. For the checkout path specifically, consider hybrid orchestration (Orchestrator for the critical path, choreography for side effects like notifications and analytics).
+
 ---
 
 ## 🛡 Event Processing Guarantees

@@ -54,6 +54,16 @@ With Lua script (single atomic execution):
   ✅ No race condition.
 ```
 
+> **⚠️ Known Risk: Lua Script Operational Complexity**
+>
+> Lua scripts on Redis are powerful but come with real production costs:
+> - **Blocking execution:** Redis is single-threaded. A slow Lua script blocks **all clients** on that shard until it completes. A bug causing an infinite loop or excessive computation freezes the entire rate limiter.
+> - **Debugging difficulty:** No step-through debugging, limited error reporting. A production Lua bug is diagnosed through logs and guesswork, not a debugger.
+> - **Version management:** Lua scripts must be deployed to all Redis nodes and cached via `SCRIPT LOAD`. Script changes require coordinated rollout — old and new script versions may coexist during deployment.
+> - **Testing:** Lua scripts can't be unit-tested outside Redis. Integration tests against a real Redis instance are required.
+>
+> **Mitigation:** Keep scripts short (< 20 lines), set `lua-time-limit` (default 5000ms) to kill runaway scripts, and include script SHA in deployment artifacts for version tracking.
+
 ### Script 1: Sliding Window Counter (Primary)
 
 ```lua
