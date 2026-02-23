@@ -35,7 +35,7 @@ Every design includes:
 |---|-----------|------------|--------|
 | 1 | [**High-Scale Marketplace**](case-studies/01-high-scale-marketplace/) | Read/write separation, caching, sharding, payment flow, event-driven | ✅ Complete |
 | 2 | [**Real-Time Notification System**](case-studies/02-real-time-notifications/) | WebSocket vs SSE, fan-out, pub/sub vs Kafka, horizontal scaling | ✅ Complete |
-| 3 | [**Payment Processing System**](case-studies/03-payment-processing/) | Idempotency, fraud detection, ledger design, exactly-once myth | 🔜 Coming |
+| 3 | [**Payment Processing System**](case-studies/03-payment-processing/) | Idempotency, fraud detection, ledger design, exactly-once myth | ✅ Complete |
 | 4 | [**Rate Limiting System**](case-studies/04-rate-limiting/) | Sliding window, token bucket, Redis implementation, DDoS mitigation | 🔜 Coming |
 
 ---
@@ -116,7 +116,15 @@ backend-architecture-case-studies/
 │   │   └── 08-scaling-strategy.md        # Day 1 → 200M users growth plan
 │   │
 │   ├── 03-payment-processing/
-│   │   └── (coming soon)
+│   │   ├── 00-overview.md                # Problem statement & transaction types
+│   │   ├── 01-capacity-estimation.md     # TPS, storage, cost ($9.5K vs $1.26M PSP)
+│   │   ├── 02-high-level-architecture.md # Service boundaries, PCI scope, API design
+│   │   ├── 03-data-model.md              # Double-entry ledger, PostgreSQL schema
+│   │   ├── 04-payment-flow.md            # Authorize → capture → settle lifecycle
+│   │   ├── 05-idempotency.md             # Exactly-once myth, dedup, edge cases
+│   │   ├── 06-fraud-detection.md         # Rule engine, ML scoring, 3DS strategy
+│   │   ├── 07-failure-recovery.md        # Double charge, orphaned auth, reconciliation
+│   │   └── 08-scaling-compliance.md      # PCI DSS, multi-PSP, data security
 │   │
 │   └── 04-rate-limiting/
 │       └── (coming soon)
