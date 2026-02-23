@@ -34,7 +34,7 @@ Every design includes:
 | # | Case Study | Key Topics | Status |
 |---|-----------|------------|--------|
 | 1 | [**High-Scale Marketplace**](case-studies/01-high-scale-marketplace/) | Read/write separation, caching, sharding, payment flow, event-driven | ✅ Complete |
-| 2 | [**Real-Time Notification System**](case-studies/02-real-time-notifications/) | WebSocket vs SSE, fan-out, pub/sub vs Kafka, horizontal scaling | 🔜 Coming |
+| 2 | [**Real-Time Notification System**](case-studies/02-real-time-notifications/) | WebSocket vs SSE, fan-out, pub/sub vs Kafka, horizontal scaling | ✅ Complete |
 | 3 | [**Payment Processing System**](case-studies/03-payment-processing/) | Idempotency, fraud detection, ledger design, exactly-once myth | 🔜 Coming |
 | 4 | [**Rate Limiting System**](case-studies/04-rate-limiting/) | Sliding window, token bucket, Redis implementation, DDoS mitigation | 🔜 Coming |
 
@@ -105,7 +105,15 @@ backend-architecture-case-studies/
 │   │   └── diagrams/                     # Mermaid architecture diagrams
 │   │
 │   ├── 02-real-time-notifications/
-│   │   └── (coming soon)
+│   │   ├── 00-overview.md                # Problem statement & notification types
+│   │   ├── 01-capacity-estimation.md     # QPS, storage, bandwidth, cost
+│   │   ├── 02-high-level-architecture.md # Kafka pipeline, API design, service boundaries
+│   │   ├── 03-data-model.md              # Cassandra + MySQL + Redis schemas
+│   │   ├── 04-connection-management.md   # WebSocket at 5M connections, kernel tuning
+│   │   ├── 05-fan-out-strategy.md        # Hybrid fan-out, broadcast store
+│   │   ├── 06-delivery-guarantees.md     # Priority routing, dedup, rate limiting
+│   │   ├── 07-failure-recovery.md        # Failure modes, runbooks, recovery SLAs
+│   │   └── 08-scaling-strategy.md        # Day 1 → 200M users growth plan
 │   │
 │   ├── 03-payment-processing/
 │   │   └── (coming soon)
