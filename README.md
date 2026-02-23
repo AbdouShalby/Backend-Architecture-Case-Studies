@@ -31,12 +31,63 @@ Every design includes:
 
 ## 📚 Case Studies
 
-| # | Case Study | Key Topics | Status |
-|---|-----------|------------|--------|
-| 1 | [**High-Scale Marketplace**](case-studies/01-high-scale-marketplace/) | Read/write separation, caching, sharding, payment flow, event-driven | ✅ Complete |
-| 2 | [**Real-Time Notification System**](case-studies/02-real-time-notifications/) | WebSocket vs SSE, fan-out, pub/sub vs Kafka, horizontal scaling | ✅ Complete |
-| 3 | [**Payment Processing System**](case-studies/03-payment-processing/) | Idempotency, fraud detection, ledger design, exactly-once myth | ✅ Complete |
-| 4 | [**Rate Limiting System**](case-studies/04-rate-limiting/) | Sliding window, token bucket, Redis implementation, DDoS mitigation | ✅ Complete |
+| # | Case Study | Scale | Key Topics | Status |
+|---|-----------|-------|------------|--------|
+| 1 | [**High-Scale Marketplace**](case-studies/01-high-scale-marketplace/) | 10M MAU, 36K QPS | CQRS, caching, sharding, saga pattern | ✅ Complete |
+| 2 | [**Real-Time Notification System**](case-studies/02-real-time-notifications/) | 50M users, 100K QPS | Kafka, WebSocket, fan-out, Cassandra | ✅ Complete |
+| 3 | [**Payment Processing System**](case-studies/03-payment-processing/) | $500M/yr, 2K TPS | Idempotency, double-entry ledger, PCI DSS | ✅ Complete |
+| 4 | [**Rate Limiting System**](case-studies/04-rate-limiting/) | 500K req/sec, 10K tenants | Sliding window, token bucket, Redis Lua | ✅ Complete |
+
+---
+
+## 🔍 Case Study Highlights
+
+### CS1: High-Scale Marketplace (12 files, ~3,900 lines)
+> **"Design a marketplace like Amazon handling 10M active users with flash sales."**
+
+- 📊 **36K QPS** peak (10× multiplier on flash sales) → 3-tier caching (CDN → Redis → MySQL)
+- 🗄️ **MySQL → shard at 10M+** with CQRS read replicas for 100:1 read-to-write ratio
+- 💰 **Cost progression**: $50/mo (launch) → $200K+/mo (100M users) across 6 stages
+- ⚡ Key insight: **Start monolith, extract services by team boundaries** — not by technical layers
+
+### CS2: Real-Time Notification System (9 files, ~2,700 lines)
+> **"Deliver 200M notifications/day to 50M users across 4 channels, with 5M concurrent WebSocket connections."**
+
+- 📊 **100K notifications/sec** peak → Kafka (3 partitions/topic) + Cassandra (TTL 90d)
+- 🔌 **500K WebSocket connections per Go server** — L4 load balancing, Redis routing map
+- 🔀 **Hybrid fan-out**: write fan-out for < 1M recipients, read fan-out for broadcasts
+- ⚡ Key insight: **SMS = dominant cost** at every scale (10M SMS/day = $75K/mo)
+
+### CS3: Payment Processing System (9 files, ~2,500 lines)
+> **"Process $500M/year with exactly-once money movement and PCI DSS compliance."**
+
+- 📊 **2,000 TPS** design target (200 payment TPS × 5 internal ops × safety margin)
+- 💳 **Double-entry ledger** in PostgreSQL — debits always equal credits, amounts as integer cents
+- 🔒 **PCI SAQ A-EP** via client-side tokenization: $15K/yr vs $300K/yr for full compliance
+- ⚡ Key insight: **PSP fees = 99.3% of cost** ($1.26M/mo) — infrastructure ($9.5K/mo) is a rounding error
+
+### CS4: Rate Limiting System (9 files, ~2,600 lines)
+> **"Protect a 10K-tenant API platform at 500K requests/second with sub-millisecond decisions."**
+
+- 📊 **1.25M Redis ops/sec** across 6-node cluster — Lua scripts for atomic counters
+- 🧮 **5 algorithms compared**: Sliding Window Counter wins (0.003% error, O(1) memory)
+- 🛡️ **Tiered failure policy**: fail-closed for security limits, fail-open for quotas
+- ⚡ Key insight: **±5% accuracy is acceptable** — local aggregation with 100ms sync = 10× fewer Redis ops
+
+---
+
+## 📊 Cross-Study Architecture Comparison
+
+| Decision | Marketplace | Notifications | Payments | Rate Limiting |
+|----------|------------|--------------|----------|--------------|
+| **Primary DB** | MySQL | Cassandra + MySQL | PostgreSQL | Redis Cluster |
+| **Queue/Broker** | RabbitMQ → Kafka | Kafka | RabbitMQ | Redis Pub/Sub |
+| **Cache** | Redis (multi-layer) | Redis (routing) | Redis (idempotency) | Redis (counters) |
+| **Consistency** | Eventual (most data) | Eventual | Strong (ledger) | Approximate (±5%) |
+| **Failure strategy** | Saga compensation | Priority-based retry | Circuit breaker + fallback PSP | Tiered fail-closed/open |
+| **Scaling approach** | Shard at 10M+ | Add WS servers | Partition by month | Redis Cluster sharding |
+| **Peak design** | 36K QPS | 100K QPS | 2,000 TPS | 500K req/sec |
+| **Monthly cost (at scale)** | $5K-$15K (10M MAU) | $30K-$50K (50M users) | $9.5K + $1.26M PSP | $3.1K |
 
 ---
 
@@ -102,7 +153,6 @@ backend-architecture-case-studies/
 │   │   ├── 09-event-driven-model.md      # Event sourcing, saga pattern
 │   │   ├── 10-failure-recovery.md        # Failure modes, blast radius, recovery
 │   │   ├── 11-scaling-strategy.md        # Day 1 → 10M → 100M growth plan
-│   │   └── diagrams/                     # Mermaid architecture diagrams
 │   │
 │   ├── 02-real-time-notifications/
 │   │   ├── 00-overview.md                # Problem statement & notification types
@@ -161,6 +211,19 @@ Every decision follows this framework:
 │                                         │
 └─────────────────────────────────────────┘
 ```
+
+---
+
+## 📈 Repository Stats
+
+| Metric | Value |
+|--------|-------|
+| **Total case studies** | 4 |
+| **Total files** | 39 Markdown files + 4 READMEs |
+| **Total content** | ~11,700 lines |
+| **Mermaid diagrams** | 40+ (inline, rendered on GitHub) |
+| **Technology decisions documented** | 30+ with full rationale |
+| **Failure scenarios covered** | 25+ with recovery strategies |
 
 ---
 

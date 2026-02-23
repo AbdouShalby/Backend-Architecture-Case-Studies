@@ -42,4 +42,21 @@
 
 ---
 
+## 🏗 Technology Decisions Summary
+
+| Component | Choice | Alternative Considered | Rationale |
+|-----------|--------|----------------------|----------|
+| **Database** | PostgreSQL (partitioned monthly) | MySQL, CockroachDB | ACID for money, JSONB for metadata, 350 GB fits single instance |
+| **Ledger** | Double-entry in PostgreSQL | Separate ledger service | Volume (10M txn/yr) doesn't justify separate infra; same ACID guarantees |
+| **Message queue** | RabbitMQ | Kafka | 55K events/day; native DLQ + priority queues; simpler ops |
+| **Tokenization** | PSP-side (Stripe.js) | Own PCI vault | SAQ A-EP ($15K/yr) vs full PCI ($300K/yr) = 20× cheaper |
+| **Multi-PSP** | Active-passive (Stripe + Adyen) | Active-active 50/50 | Simplifies reconciliation; 5% warm traffic to Adyen for failover |
+| **Fraud detection** | Stripe Radar + custom rules | Build own ML pipeline | 10M txn/yr doesn't justify ML infra cost |
+| **Amount storage** | Integer cents (BIGINT) | DECIMAL, float | No floating point risk, simpler arithmetic across currencies |
+| **Multi-region** | DR only (async replication) | Active-active writes | Distributed transactions for money = unacceptable complexity |
+
+> Full trade-off analysis with reasoning: [08-scaling-compliance.md → Key Trade-offs Summary](08-scaling-compliance.md)
+
+---
+
 ## ⬅️ [← Back to All Case Studies](../../README.md)

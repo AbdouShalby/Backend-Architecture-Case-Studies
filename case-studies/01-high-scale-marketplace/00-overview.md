@@ -124,4 +124,4 @@ This means:
 
 ---
 
-## ➡️ Next: [Capacity Estimation →](01-capacity-estimation.md)
+## ⬅️ [← Case Study Index](README.md) · [Capacity Estimation →](01-capacity-estimation.md)

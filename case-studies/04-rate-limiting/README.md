@@ -41,4 +41,21 @@
 
 ---
 
+## 🏗 Technology Decisions Summary
+
+| Component | Choice | Alternative Considered | Rationale |
+|-----------|--------|----------------------|----------|
+| **Architecture** | Hybrid (Gateway L1 + Library L2) | Pure gateway, sidecar | Lower latency for L2 checks; no single bottleneck |
+| **Primary algorithm** | Sliding Window Counter | Token bucket, fixed window | 0.003% error (Cloudflare research), O(1) memory, 2 Redis ops |
+| **Burst-friendly algorithm** | Token Bucket (Enterprise tier) | Leaky bucket | Allows controlled bursts; capacity + refill rate config |
+| **Storage** | Redis Cluster (6 nodes) | Memcached, DynamoDB | Lua scripts for atomicity, Pub/Sub for config sync, persistence |
+| **Accuracy tolerance** | ±5% (local aggregation) | Exact counting | 10× fewer Redis ops; acceptable for rate limiting |
+| **Failure mode** | Tiered (closed/open/local) | Always fail-open | Security limits (IP, login) need fail-closed; quotas can fail-open |
+| **Multi-tenant quotas** | Weighted endpoint costs | Simple counters | `/search` costs 5× more than `/status`; fair billing |
+| **DDoS protection** | Edge (CDN) + Application layers | Application only | Can't handle 10M+ req/sec at application layer alone |
+
+> Full trade-off analysis with reasoning: [08-ddos-advanced.md → Key Trade-offs Summary](08-ddos-advanced.md)
+
+---
+
 ## ⬅️ [← Back to All Case Studies](../../README.md)

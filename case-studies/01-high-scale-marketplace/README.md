@@ -56,3 +56,24 @@ Each section is self-contained but references related sections. Key decisions ar
 - 🔢 **Numbers** — concrete calculations
 - ⚠️ **Warning** — common pitfalls
 - 💡 **Insight** — non-obvious engineering points
+
+---
+
+## 🏗 Technology Decisions Summary
+
+| Component | Choice | Alternative Considered | Rationale |
+|-----------|--------|----------------------|----------|
+| **Database** | MySQL → shard at 10M+ | MongoDB, DynamoDB | Relational integrity for marketplace (orders, inventory, payments) |
+| **Cache** | Redis (multi-layer) | Memcached | Sorted sets for rankings, pub/sub, natural TTL for carts |
+| **Search** | Elasticsearch | MySQL FULLTEXT | Full-text + faceted filtering across millions of products |
+| **Queue** | RabbitMQ → Kafka at 50M+ | Kafka from Day 1 | Simpler ops at early scale; switch when event volume justifies |
+| **CQRS** | Read replicas + materialized views | Single DB for all | 100:1 read-to-write ratio demands read optimization |
+| **Sharding** | Delay until needed (Stage 4+) | Pre-shard from Day 1 | 10M MAU fits in vertical MySQL; premature sharding = premature complexity |
+| **Payments** | Choreography saga | Two-phase commit | No distributed transaction coordinator; events compensate on failure |
+| **Session/Cart** | Redis (primary store) | MySQL cart table | Sub-ms reads, natural TTL for abandoned cart cleanup |
+
+> Full trade-off analysis with reasoning: [11-scaling-strategy.md → Final Trade-offs Summary](11-scaling-strategy.md)
+
+---
+
+## ⬅️ [← Back to All Case Studies](../../README.md)

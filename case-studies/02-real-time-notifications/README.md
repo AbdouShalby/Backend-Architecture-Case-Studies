@@ -60,4 +60,22 @@
 
 ---
 
+## 🏗 Technology Decisions Summary
+
+| Component | Choice | Alternative Considered | Rationale |
+|-----------|--------|----------------------|----------|
+| **Real-time transport** | WebSocket (SSE fallback) | SSE only, Long polling | Bidirectional needed for acks + read receipts |
+| **Message broker** | Kafka (3 partitions/topic) | RabbitMQ | 200M msgs/day + replay capability for catch-up |
+| **Notification store** | Cassandra (TTL 90d) | MySQL, DynamoDB | Write-heavy, partition-by-user, built-in TTL expiry |
+| **User/config store** | MySQL | PostgreSQL | Relational for preferences, templates, users |
+| **Connection routing** | Redis hash map | In-memory per-server | Cross-server routing; survives WS server restarts |
+| **Load balancer** | L4 (TCP) for WebSocket | L7 (HTTP) | Lower overhead for persistent connections |
+| **WS server language** | Go | Node.js, Java | Goroutines handle 500K concurrent connections per server |
+| **Fan-out strategy** | Hybrid (write < 1M, read > 1M) | Pure write fan-out | Can't write 50M rows for broadcast; read fan-out for large audiences |
+| **Multi-region** | Delay until Stage 5 (50M+) | From Day 1 | Complexity not justified until global user base |
+
+> Full trade-off analysis with reasoning: [08-scaling-strategy.md → Key Trade-offs Summary](08-scaling-strategy.md)
+
+---
+
 ## ⬅️ [← Back to All Case Studies](../../README.md)
