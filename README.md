@@ -36,7 +36,7 @@ Every design includes:
 | 1 | [**High-Scale Marketplace**](case-studies/01-high-scale-marketplace/) | Read/write separation, caching, sharding, payment flow, event-driven | ✅ Complete |
 | 2 | [**Real-Time Notification System**](case-studies/02-real-time-notifications/) | WebSocket vs SSE, fan-out, pub/sub vs Kafka, horizontal scaling | ✅ Complete |
 | 3 | [**Payment Processing System**](case-studies/03-payment-processing/) | Idempotency, fraud detection, ledger design, exactly-once myth | ✅ Complete |
-| 4 | [**Rate Limiting System**](case-studies/04-rate-limiting/) | Sliding window, token bucket, Redis implementation, DDoS mitigation | 🔜 Coming |
+| 4 | [**Rate Limiting System**](case-studies/04-rate-limiting/) | Sliding window, token bucket, Redis implementation, DDoS mitigation | ✅ Complete |
 
 ---
 
@@ -127,7 +127,15 @@ backend-architecture-case-studies/
 │   │   └── 08-scaling-compliance.md      # PCI DSS, multi-PSP, data security
 │   │
 │   └── 04-rate-limiting/
-│       └── (coming soon)
+│       ├── 00-overview.md                # Rate limit types, algorithms, requirements
+│       ├── 01-capacity-estimation.md     # 500K req/sec, Redis sizing, cost ($3.1K/mo)
+│       ├── 02-high-level-architecture.md # Hybrid gateway + library, config sync
+│       ├── 03-algorithms.md              # 5 algorithms deep dive with Lua scripts
+│       ├── 04-data-model-redis.md        # Redis keys, Lua scripts, cluster sharding
+│       ├── 05-distributed-challenges.md  # Race conditions, partitions, clock skew
+│       ├── 06-multi-tenant.md            # Plan tiers, weighted quotas, burst control
+│       ├── 07-failure-recovery.md        # Redis failure modes, tiered fallback
+│       └── 08-ddos-advanced.md           # Adaptive limits, DDoS detection, edge defense
 │
 └── README.md
 ```
