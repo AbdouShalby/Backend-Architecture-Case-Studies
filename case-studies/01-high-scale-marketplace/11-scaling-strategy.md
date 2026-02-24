@@ -312,6 +312,40 @@ Multi-Region Architecture:
 
 ---
 
+## 📋 Production Readiness Checklist
+
+```
+Core Infrastructure:
+  □ Load balancer health checks configured (5s interval, 3 failures = unhealthy)
+  □ Auto-scaling policies tested under simulated flash sale load
+  □ MySQL replication lag monitoring (alert if > 1 second)
+  □ Redis eviction policy set to allkeys-lru (not noeviction)
+  □ Elasticsearch index rotation automated (monthly rollover)
+
+Data Integrity:
+  □ Order idempotency keys verified (duplicate checkout = same order)
+  □ Inventory reservation timeout sweep job running every 5 minutes
+  □ Payment reconciliation: our records vs Stripe settlement report
+  □ MySQL backup tested with actual restore (not just backup creation)
+  □ Cart-to-order atomicity verified (no partial orders)
+
+Resilience:
+  □ Redis circuit breaker tested (kill Redis, verify graceful degradation)
+  □ RabbitMQ DLQ processing verified (poison messages don't block queue)
+  □ MySQL failover tested (kill primary, verify replica promotion < 30s)
+  □ Rate limiting active on all public endpoints
+  □ Graceful degradation: search down → show cached categories
+
+Observability:
+  □ Distributed tracing across checkout flow (order → payment → inventory)
+  □ Business metrics dashboard (orders/min, conversion rate, cart abandonment)
+  □ Error budget tracking (99.95% SLO = 4.38 hours/year budget)
+  □ On-call rotation established with escalation policy
+  □ Runbooks for top 10 failure scenarios documented
+```
+
+---
+
 ## ⚖️ Final Trade-offs Summary
 
 | Decision | We Chose | Alternative | Why |
@@ -324,6 +358,22 @@ Multi-Region Architecture:
 | Multi-region vs Single | Single region (until Stage 6) | Multi-region from start | Complexity not justified until 50M+ |
 | Cache TTL vs Consistency | TTL-based (accept staleness) | Write-through everywhere | 95% of data can be 3-5 min stale |
 | Saga vs 2PC | Choreography saga | Two-phase commit | No distributed transaction coordinator needed |
+
+---
+
+## 🔄 What I'd Do Differently in Real Production
+
+| Area | What This Design Does | What I'd Change | Why |
+|------|----------------------|-----------------|-----|
+| **Service extraction** | Planned at Stage 5 (50M MAU) | Extract Payment Service earlier (Stage 3) | Payment has the strictest reliability requirements — isolate it before the monolith gets complex |
+| **Search from Day 1** | MySQL FULLTEXT first, Elasticsearch at Stage 3 | Start with Elasticsearch at Stage 2 | MySQL FULLTEXT is deceptively bad at faceted search — the migration pain isn't worth the savings |
+| **Cart persistence** | Redis-only (24h TTL) | Redis + MySQL backup for logged-in users | 24h TTL means lost carts overnight. Logged-in users expect persistence across devices |
+| **Monitoring** | Mentioned but not detailed | Invest in distributed tracing from Day 1 (OpenTelemetry) | Without tracing, debugging a checkout that spans 5 services is guesswork |
+| **Feature flags** | Not mentioned | Add feature flag system before scaling beyond Stage 2 | Every scaling change (new cache layer, read replica routing) should be flag-controlled for safe rollout |
+| **Database** | MySQL throughout | Evaluate PostgreSQL for the order/payment domain | PostgreSQL's advisory locks, JSONB, and partial indexes would simplify several workarounds we described |
+| **Load testing** | Referenced in scaling stages | Continuous load testing in CI (not just manual before launches) | Flash sale readiness shouldn't depend on someone remembering to run a test |
+
+> **The honest truth:** This design optimizes for interview completeness — showing you understand all the patterns. In a real startup, I'd skip Stages 3-4 entirely if traffic didn't demand them. YAGNI (You Ain't Gonna Need It) beats premature optimization every time.
 
 ---
 

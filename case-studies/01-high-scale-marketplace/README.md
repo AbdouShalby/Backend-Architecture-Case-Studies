@@ -41,6 +41,34 @@ This is one of the most comprehensive system design questions — it touches dat
 
 ---
 
+## 🏗 Architecture Overview
+
+```mermaid
+graph TB
+    Client["Clients<br/>(Web, Mobile, Seller)"] --> CDN["CDN + L7 LB"]
+    CDN --> GW["API Gateway"]
+    
+    GW --> PS["Product Service"]
+    GW --> CS["Cart Service"]
+    GW --> OS["Order Service"]
+    GW --> PAY["Payment Service"]
+    
+    OS --> MQ["RabbitMQ"]
+    MQ --> WK["Workers"]
+    
+    PS --> REDIS[("Redis<br/>Cache + Sessions")]
+    PS --> ES[("Elasticsearch")]
+    OS --> DB[("MySQL Primary<br/>+ Replicas")]
+    
+    style GW fill:#1565c0,color:#fff
+    style MQ fill:#ff6f00,color:#fff
+    style DB fill:#2e7d32,color:#fff
+```
+
+> Full architecture with all components: [02-high-level-architecture.md](02-high-level-architecture.md)
+
+---
+
 ## 📖 How to Read This Case Study
 
 Start with the **Overview** for requirements, then follow the numbered sections in order. Each section builds on the previous one:

@@ -52,6 +52,31 @@
 
 ---
 
+## 🏗 Architecture Overview
+
+```mermaid
+graph TB
+    Sources["Event Sources<br/>(Orders, Auth, Social)"] --> API["Notification API"]
+    API --> KAFKA["Kafka Cluster"]
+    KAFKA --> Router["Channel Router"]
+    
+    Router --> WS["WebSocket Servers<br/>(5M connections)"]
+    Router --> Push["Push Workers<br/>(APNs + FCM)"]
+    Router --> Email["Email Workers<br/>(SES)"]
+    Router --> SMS["SMS Workers<br/>(Twilio)"]
+    
+    WS --> REDIS[("Redis<br/>Connection Map")]
+    Router --> CASS[("Cassandra<br/>Notification Store")]
+    
+    style KAFKA fill:#1565c0,color:#fff
+    style WS fill:#2e7d32,color:#fff
+    style CASS fill:#6a1b9a,color:#fff
+```
+
+> Full architecture with all components: [02-high-level-architecture.md](02-high-level-architecture.md)
+
+---
+
 ## 📖 Reading Guide
 
 **Quick pass (15 min)**: Read 00-overview → 02-architecture → 05-fan-out  

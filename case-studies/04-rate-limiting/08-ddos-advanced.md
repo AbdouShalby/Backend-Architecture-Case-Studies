@@ -465,4 +465,19 @@ Performance Targets:
 
 ---
 
+## 🔄 What I'd Do Differently in Real Production
+
+| Area | What This Design Does | What I'd Change | Why |
+|------|----------------------|-----------------|-----|
+| **Build vs Buy** | Custom-built everything | Use a managed API gateway (Kong, AWS API Gateway) for L1, custom for L2 only | L1 rate limiting (IP, global) is commodity. Don't build what CloudFlare/AWS do better. Spend engineering time on the tenant-level logic that's unique to your platform |
+| **5 algorithms** | Implements and compares 5 | Ship with sliding window counter only, add token bucket when a paying customer asks for burst support | Every algorithm is code to maintain and test. Ship one, iterate when you have real usage data |
+| **Redis Cluster from Day 1** | 6-node Redis Cluster | Start with 2-node Redis Sentinel, upgrade to Cluster at 100K req/sec | Redis Cluster's operational complexity (slot management, resharding) isn't justified until single-node Redis is actually saturated |
+| **Lua scripts** | All rate limit logic in Lua | Use Redis Lua for the core counter, but simple INCR+EXPIRE for basic tiers | Lua scripts are hard to debug and version. Keep them minimal — only use Lua where atomicity is truly required |
+| **Adaptive rate limiting** | Health-score based dynamic limits | Start with static limits + manual override, add adaptive when you have 3+ months of traffic patterns | Adaptive systems need baseline data. Without historical norms, the system doesn't know what "abnormal" looks like |
+| **Shadow mode** | Not mentioned in the design | Deploy in shadow mode (log, don't enforce) for 2 weeks before any production enforcement | The #1 cause of rate limiter outages is misconfigured limits. Shadow mode catches bad configs before they reject real traffic |
+
+> **The honest truth:** The best rate limiter is one your API consumers never notice. I'd invest heavily in clear documentation (rate limit headers, error messages, upgrade paths) and a self-service dashboard before any of the advanced algorithms. A well-communicated 100 req/min limit causes fewer support tickets than a poorly-documented adaptive system.
+
+---
+
 ## ⬅️ [← Failure & Recovery](07-failure-recovery.md) · [🏠 Back to Case Study](README.md)

@@ -261,6 +261,40 @@ Flow:
 
 ---
 
+## 📋 Production Readiness Checklist
+
+```
+Core Infrastructure:
+  □ WebSocket servers tested at 500K connections/node (memory + CPU profile)
+  □ Kafka consumer lag monitoring (alert if lag > 10K messages)
+  □ Cassandra compaction strategy tuned (SizeTieredCompaction for writes)
+  □ Redis connection registry TTL matches WebSocket heartbeat timeout
+  □ SMS provider fallback tested (block Twilio, verify Vonage routing)
+
+Delivery Guarantees:
+  □ Deduplication verified: same event → exactly one notification per channel
+  □ Priority routing tested: 2FA SMS delivered in < 5 seconds
+  □ DLQ processing: failed notifications retried correctly (not lost)
+  □ Offline delivery: user reconnects → receives all missed notifications in order
+  □ Rate limiting: single user can't receive > 100 notifications/hour
+
+Resilience:
+  □ Kafka cluster down: critical notifications fall back to synchronous delivery
+  □ WebSocket server crash: clients reconnect with staggered backoff (no thundering herd)
+  □ Redis down: connection routing degrades to broadcast (less efficient, still works)
+  □ Cassandra node down: reads/writes continue at reduced consistency (LOCAL_ONE)
+  □ Full region failure: DNS failover to DR region tested end-to-end
+
+Observability:
+  □ Per-channel delivery latency (p50/p95/p99) dashboards
+  □ Notification funnel: created → queued → delivered → opened (drop-off at each stage)
+  □ SMS cost tracking dashboard (daily spend, per-notification cost)
+  □ On-call rotation with clear escalation (L1: delivery delay, L2: delivery failure, L3: data loss)
+  □ Runbooks for: Kafka lag spike, WS mass disconnect, SMS provider outage
+```
+
+---
+
 ## ⚖️ Key Trade-offs Summary
 
 | Decision | Choice | Alternative | Why |
@@ -324,6 +358,21 @@ Flow:
 □ Test regional failover (drain one region entirely)
 □ Verify GDPR data residency compliance
 ```
+
+---
+
+## 🔄 What I'd Do Differently in Real Production
+
+| Area | What This Design Does | What I'd Change | Why |
+|------|----------------------|-----------------|-----|
+| **WebSocket from Day 1** | Recommends polling at Stage 1 | Start with WebSocket at Stage 1 (using managed service like Pusher/Ably) | Building WS infra is premature, but polling UX is terrible. Managed WS = real-time without the ops burden |
+| **Kafka timing** | Introduced at Stage 3 (1M users) | Delay Kafka until 10M users, use Redis Streams at 1M | Kafka's operational cost at 1M users is unjustifiable. Redis Streams handles moderate event volumes with simpler ops |
+| **Cassandra timing** | Introduced at Stage 4 (10M users) | Delay until 50M+, use MySQL partitioning longer | MySQL with monthly partitions handles notification reads well to 10M. Cassandra's operational learning curve is steep |
+| **SMS provider** | Twilio only | Multi-provider from Day 1 (Twilio + Vonage) | SMS deliverability varies wildly by carrier/region. A single provider means blind spots in delivery rates |
+| **Notification preferences** | User-configurable per channel | Add ML-based send-time optimization | "Don't send push at 3 AM" is obvious. But optimal send time varies per user — even a simple model improves engagement 15-20% |
+| **Template engine** | Custom rendering | Use a managed template service (SendGrid dynamic templates, etc.) | Building template rendering, i18n, and A/B testing from scratch is 3 months of work for zero competitive advantage |
+
+> **The honest truth:** Real notification systems are 60% "managing SMS costs" and 40% everything else. I'd spend more time on intelligent channel selection (is push cheaper and equally effective here? skip SMS) than on WebSocket connection optimization.
 
 ---
 

@@ -33,6 +33,31 @@
 
 ---
 
+## 🏗 Architecture Overview
+
+```mermaid
+graph TB
+    Client["API Clients<br/>(10K tenants)"] --> GW["API Gateway<br/>L1: IP + Global limits"]
+    GW --> SVC["Services<br/>L2: Tenant + Endpoint limits"]
+    
+    GW --> R1[("Redis Cluster<br/>(6 nodes)")]
+    SVC --> R1
+    
+    Admin["Admin API"] --> Config["Config Store"]
+    Config -->|"Pub/Sub"| GW
+    Config -->|"Pub/Sub"| SVC
+    
+    SVC --> App["Application Logic"]
+    
+    style GW fill:#f44336,color:#fff
+    style SVC fill:#1565c0,color:#fff
+    style R1 fill:#ff6f00,color:#fff
+```
+
+> Full architecture with all options compared: [02-high-level-architecture.md](02-high-level-architecture.md)
+
+---
+
 ## 📖 Reading Guide
 
 **If you have 15 minutes:** Read [00-overview](00-overview.md) + [03-algorithms](03-algorithms.md) + [05-distributed-challenges](05-distributed-challenges.md)  

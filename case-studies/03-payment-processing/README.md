@@ -34,6 +34,35 @@
 
 ---
 
+## 🏗 Architecture Overview
+
+```mermaid
+graph TB
+    Client["Checkout<br/>(Web, Mobile, API)"] --> GW["API Gateway"]
+    GW --> PS["Payment Service"]
+    
+    PS --> FS["Fraud Service"]
+    PS --> TS["Token Service<br/>🔒 PCI Scope"]
+    PS --> PR["PSP Router"]
+    PS --> LS["Ledger Service"]
+    
+    PR --> Stripe["Stripe"]
+    PR --> Adyen["Adyen"]
+    
+    PS --> MQ["RabbitMQ"]
+    MQ --> REC["Reconciliation<br/>Worker"]
+    
+    LS --> PG[("PostgreSQL<br/>Double-Entry Ledger")]
+    
+    style PS fill:#1565c0,color:#fff
+    style TS fill:#f44336,color:#fff
+    style LS fill:#6a1b9a,color:#fff
+```
+
+> Full architecture with all components: [02-high-level-architecture.md](02-high-level-architecture.md)
+
+---
+
 ## 📖 Reading Guide
 
 **If you have 15 minutes:** Read [00-overview](00-overview.md) + [04-payment-flow](04-payment-flow.md) + [05-idempotency](05-idempotency.md)  

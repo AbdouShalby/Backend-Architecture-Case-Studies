@@ -292,4 +292,19 @@ Pre-launch:
 
 ---
 
+## 🔄 What I'd Do Differently in Real Production
+
+| Area | What This Design Does | What I'd Change | Why |
+|------|----------------------|-----------------|-----|
+| **Start with one PSP** | Active-passive (Stripe primary, Adyen warm) | Start Stripe-only, add Adyen only when Stripe's uptime becomes a measured problem | Maintaining two PSP integrations doubles the testing surface. Don't pay that cost until you have data showing you need it |
+| **Custom fraud rules** | Two-layer: Stripe Radar + custom rules engine | Start with Stripe Radar only, add custom rules after 6 months of chargeback data | You can't write good fraud rules without data. The first 6 months of custom rules will be wrong — let Radar handle it |
+| **Reconciliation** | Hourly automated reconciliation worker | Daily reconciliation is sufficient until $50M/year | Hourly reconciliation at low volume generates noise (timing differences that self-resolve). Daily catches real issues without false positives |
+| **Double-entry ledger** | Full double-entry from Day 1 | Simple transaction log first, migrate to double-entry at $100M/year | Double-entry is the right eventual design, but at $10M ARR, a simpler balance tracking system is faster to build and debug |
+| **Webhook handling** | Queue-based async processing | Synchronous webhook processing with async retry fallback | At 55K events/day, synchronous handling is fine and simpler to debug. Add queuing when webhook volume justifies it |
+| **Multi-currency** | Designed but not prioritized | Build multi-currency as a first-class concern from Day 1 if ANY international expansion is planned | Retrofitting currency support into a ledger that assumed single-currency is one of the most painful migrations in fintech |
+
+> **The honest truth:** Payment systems are 80% "handling edge cases nobody told you about" and 20% architecture. I'd invest more time in a comprehensive test suite that simulates real PSP failure modes (partial captures, delayed webhooks, duplicate notifications) than in the perfect architecture diagram.
+
+---
+
 ## ⬅️ [← Failure & Recovery](07-failure-recovery.md) · [Back to Case Study Index](README.md)
